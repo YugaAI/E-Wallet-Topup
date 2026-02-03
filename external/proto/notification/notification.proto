@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "notification-system/internal/notificationpb";
+
+// service definition
+service NotificationService {
+  // Send a notification using multi-channel payload
+  rpc SendNotification (SendNotificationRequest) returns (SendNotificationResponse);
+}
+
+// Request message
+message SendNotificationRequest {
+  string event = 1;               // event name
+  int64 user_id = 2;              // target user
+  repeated string channels = 3;   // e.g., ["email","push"]
+  NotificationPayload payload = 4; // envelope payload
+}
+
+// envelope payload
+message NotificationPayload {
+  EmailPayload email = 1;
+  PushPayload push = 2;
+}
+
+// Email payload
+message EmailPayload {
+  string to = 1;
+  string subject = 2;
+  string body = 3;
+}
+
+// Push payload
+message PushPayload {
+  string title = 1;
+  string body = 2;
+  map<string, string> data = 3; // key-value extra
+}
+
+// Response message
+message SendNotificationResponse {
+  int64 notification_id = 1;
+  string status = 2; // pending, processing, success, partial_failed
+}
