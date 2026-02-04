@@ -9,6 +9,7 @@ import (
 	"ewallet-topup/internal/workflow"
 	"ewallet-topup/internal/workflow/transaction"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.temporal.io/sdk/client"
@@ -30,6 +31,13 @@ func (api *TransactionAPI) CreateTransaction(c *gin.Context) {
 		helpers.SendResponseHTTP(c, http.StatusBadRequest, constants.ErrFailedBadRequest, nil)
 		return
 	}
+	authHeader := c.GetHeader("Authorization")
+	const prefix = "Bearer "
+	if strings.HasPrefix(authHeader, prefix) {
+		req.Token = authHeader[len(prefix):]
+	} else {
+		req.Token = authHeader
+	}
 
 	token, ok := c.Get("token")
 	if !ok {
@@ -38,11 +46,11 @@ func (api *TransactionAPI) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	tokenData := token.(models.TokenData)
-	req.UserID = tokenData.UserID
+	req.UserID = token.(models.TokenData).UserID
 
-	req.Token = c.GetHeader("Authorization")
+	//req.Token = c.GetHeader("Authorization")
 
+	req.Referance = helpers.GenerateReference()
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        "trx_" + req.Referance,
 		TaskQueue: workflow.TransactionTaskQueue,
@@ -70,25 +78,32 @@ func (api *TransactionAPI) CreateTransaction(c *gin.Context) {
 
 func (api *TransactionAPI) UpdateStatusTransaction(c *gin.Context) {
 	ref := c.Param("reference")
-	status := c.Query("status")
 
-	var signal string
-	switch status {
-	case "CONFIRM":
-		signal = transaction.SignalTransactionConfirm
-	case "CANCEL":
-		signal = transaction.SignalTransactionCancel
-	default:
+	var req models.UpdateTransactionStatus
+	if err := c.ShouldBindJSON(&req); err != nil {
 		helpers.SendResponseHTTP(c, http.StatusBadRequest, constants.ErrFailedBadRequest, nil)
 		return
 	}
 
+	var transactionSignalMap = map[string]string{
+		"CONFIRM": transaction.SignalTransactionConfirm,
+		"CANCEL":  transaction.SignalTransactionCancel,
+	}
+
+	signal, ok := transactionSignalMap[req.Status]
+	if !ok {
+		helpers.SendResponseHTTP(c, http.StatusBadRequest, constants.ErrFailedBadRequest, nil)
+		return
+	}
+	payload := transaction.SignalTransaction{
+		Reason: req.Reason,
+	}
 	err := api.Temporal.SignalWorkflow(
-		context.Background(),
+		c.Request.Context(),
 		"trx_"+ref,
 		"",
 		signal,
-		nil,
+		payload,
 	)
 	if err != nil {
 		helpers.SendResponseHTTP(c, http.StatusInternalServerError, constants.ErrServerError, nil)

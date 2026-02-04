@@ -17,14 +17,14 @@ const (
 )
 
 type Transaction struct {
-	ID          int64
-	UserID      int64
-	Amount      int64 // 👈 cents
-	Type        TransactionType
-	Status      TransactionStatus
-	Reference   string
-	Description string
-
+	ID             int64
+	UserID         int64
+	Amount         float64
+	Type           TransactionType
+	Status         TransactionStatus
+	Reference      string
+	Description    string
+	Token          string
 	AdditionalInfo *string
 
 	CreatedAt time.Time
@@ -42,13 +42,12 @@ type CreateTransactionRequest struct {
 	Amount      int64  `json:"amount" validate:"required,gt=0"`
 	Type        string `json:"transaction_type" validate:"required,oneof=TOPUP PURCHASE"`
 	Description string `json:"description" validate:"required"`
-
-	Token string `json:"-"`
+	Token       string `json:"token"`
 }
 
 // Status Update DTO
 type UpdateTransactionStatus struct {
-	Reference string `validate:"required"`
-	Status    string `validate:"required,oneof=PENDING SUCCESS FAILED REVERSED"`
-	Reason    string
+	Reference string  `json:"reference" validate:"required"`
+	Status    string  `json:"status" validate:"required,oneof=CONFIRM CANCEL"`
+	Reason    *string `json:"reason,omitempty"`
 }

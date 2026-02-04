@@ -11,7 +11,7 @@ type ITransactionRepo interface {
 	Create(ctx context.Context, trx *models.Transaction) error
 	FindByReference(ctx context.Context, ref string) (*models.Transaction, error)
 	FindByReferenceForUpdate(ctx context.Context, ref string) (*models.Transaction, error)
-	UpdateStatus(ctx context.Context, ref string, status models.TransactionStatus, reason *string) error
+	UpdateStatus(ctx context.Context, reference string, status models.TransactionStatus, reason *string) error
 }
 
 type ITransactionService interface {

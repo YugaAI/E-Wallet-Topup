@@ -24,7 +24,7 @@ func (s *TransactionService) CreatePending(ctx context.Context, req models.Creat
 
 	trx := &models.Transaction{
 		UserID:      req.UserID,
-		Amount:      req.Amount,
+		Amount:      float64(req.Amount),
 		Type:        models.TransactionType(req.Type),
 		Status:      models.TransactionStatusPending,
 		Reference:   req.Referance,

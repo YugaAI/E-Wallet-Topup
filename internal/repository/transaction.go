@@ -32,10 +32,19 @@ func (r *TransactionRepo) FindByReferenceForUpdate(ctx context.Context, ref stri
 	return &trx, err
 }
 
-func (r *TransactionRepo) UpdateStatus(ctx context.Context, ref string, status models.TransactionStatus, reason *string) error {
+func (r *TransactionRepo) UpdateStatus(ctx context.Context, reference string, status models.TransactionStatus, reason *string) error {
+
+	updateData := map[string]interface{}{
+		"status": status,
+	}
+
+	if reason != nil {
+		updateData["additional_info"] = *reason
+	}
+
 	return r.DB.WithContext(ctx).
-		Model(&models.Transaction{}).Where("reference = ?", ref).UpdateColumns(map[string]interface{}{
-		"transaction_status": status,
-		"additional_info":    reason,
-	}).Error
+		Model(&models.Transaction{}).
+		Where("reference = ?", reference).
+		Updates(updateData).
+		Error
 }
